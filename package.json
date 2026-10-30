@@ -11,7 +11,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.95.0",
+    "@supabase/supabase-js": "2.118.0",
     "dexie": "^4.3.0",
     "exceljs": "^4.4.0",
     "lucide-react": "^0.468.0",

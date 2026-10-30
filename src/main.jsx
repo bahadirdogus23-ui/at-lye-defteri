@@ -96,16 +96,27 @@ function App() {
   const scope = identity ? (identity.local ? "local" : workspace) : null;
   useEffect(() => {
     if (!cloud) return;
-    cloud.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    cloud.auth.getSession().then(({ data, error }) => {
+      if (error) setError("Oturum doğrulanamadı. Yeniden giriş yapın.");
+      setSession(error ? null : data.session);
+      setAuthReady(true);
+    }).catch(() => {
+      setError("Oturum okunamadı. Yeniden giriş yapın.");
       setAuthReady(true);
     });
     const { data } = cloud.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      setIdentity((current) => current?.local ? current : null);
+      setWorkspace("");
+      setPassword("");
+      return;
+    }
     let active = true;
+    setIdentity((current) => current?.local ? current : null);
+    setWorkspace("");
     (async () => {
       const { data, error } = await cloud
         .from("members")
@@ -113,6 +124,12 @@ function App() {
         .eq("user_id", session.user.id);
       if (!active) return;
       if (error) {
+        if (navigator.onLine) {
+          setIdentity(null);
+          setWorkspace("");
+          setError("Üyelik doğrulanamadı. Yeniden giriş yapın: " + error.message);
+          return;
+        }
         const cached = localStorage.getItem(
           "atolye-membership-" + session.user.id,
         );
@@ -135,6 +152,9 @@ function App() {
         return;
       }
       if (data?.length !== 1) {
+        localStorage.removeItem("atolye-membership-" + session.user.id);
+        setIdentity(null);
+        setWorkspace("");
         setError(
           "Hesabınız tam bir işletmeye bağlanmalı. Kurulum yönergesindeki üyelik adımını tamamlayın.",
         );

@@ -1,12 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { importEvents } from "./storage";
+// Public project configuration; server secrets must never be placed here.
+const projectUrl = import.meta.env.VITE_SUPABASE_URL || "https://ojemwqkycabuodmhbsui.supabase.co";
+const projectKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "sb_publishable_ZHh08D4VHKj-dchLE12wbw_XPC55Gfp";
 export const cloud =
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
-    ? createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY,
-      )
-    : null;
+  import.meta.env.VITE_LOCAL_ONLY === "true"
+    ? null
+    : createClient(projectUrl, projectKey);
 export async function sync(db, workspace, client = cloud) {
   const events = await db.events.toArray();
   const sent = new Set((await db.sent.toArray()).map((r) => r.id));
