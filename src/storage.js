@@ -7,6 +7,7 @@ export function openDB(scope = "local") {
     sent: "id",
     backups: "id,at",
   });
+  db.version(2).stores({ settings: "id" });
   return db;
 }
 export async function append(db, e) {

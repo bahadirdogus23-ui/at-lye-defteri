@@ -1,3 +1,4 @@
+import FolderBackup from "./FolderBackup.jsx";
 import Editor from "./Editor.jsx";
 import Reports from "./Reports.jsx";
 import { Field, Empty } from "./ui.jsx";
@@ -1198,6 +1199,14 @@ function App() {
               </section>
             </>
           )}
+          <div hidden={tab !== "Yedekleme"}>
+            <FolderBackup
+              db={dbRef.current}
+              scope={scope}
+              password={password}
+              events={events}
+            />
+          </div>
           {tab === "Yedekleme" && (
             <section className="panel padded backup">
               <h2>Şifreli yedekleme</h2>
@@ -1213,6 +1222,7 @@ function App() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+
               <div className="info">
                 {password.length >= 12
                   ? "Oturum açıkken günlük otomatik yedek etkin."

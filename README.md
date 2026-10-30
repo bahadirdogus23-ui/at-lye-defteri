@@ -91,3 +91,9 @@ BASE_PATH=/at-lye-defteri/ npm run test:e2e
 ```
 
 Bulut geliştirme ortamını yayınlamak ile web sitesini GitHub Pages'e dağıtmak farklı işlemlerdir. GitHub Actions çalıştırması ve HTTPS adresinden başarılı yanıt gözlenmeden sitenin yayında olduğu varsayılmaz.
+
+## Otomatik klasör yedeği
+
+Bilgisayarda Chrome/Edge ile **Yedekleme** ekranında yedek parolasını girin ve **Yedek klasörü seç** düğmesiyle bir klasör seçip yazma izni verin. Uygulama açık kaldığı sürece diğer ekranlarda da veri değişikliklerinden yaklaşık iki saniye sonra şifreli tam JSON yedeği bu klasöre yazılır. Beş dakikada bir ve uygulamaya geri dönüldüğünde de kontrol edilir. Değişmeyen veri için aynı oturumda tekrar dosya yazılmaz; her yeni yedek ayrı isim taşır, önceki dosyalar silinmez.
+
+Klasör seçimi IndexedDB'de hatırlanır. Her yeni oturumda yedek parolasını tekrar girin; tarayıcı isterse **Klasör iznini yenile** düğmesini kullanın. Parola diskte saklanmaz. Uygulama kapalıyken veya cihaz uyurken klasöre yedek yazılamaz. Safari/Firefox ve bu API'yi desteklemeyen telefon tarayıcılarında otomatik klasör erişimi yoktur; şifreli JSON indirme kullanılabilir. Klasörde biriken eski dosyaları siz yönetirsiniz. Bu yedekleri mevcut geri yükleme ekranından açabilirsiniz.

@@ -242,3 +242,66 @@ test("tahsilat düzeltme ve iptal kasayı günceller, eski olayları korur", asy
     .click();
   await expect(page.locator(".audit")).toHaveCount(3);
 });
+
+test("klasör yedeği diğer ekranda da otomatik yazılır ve klasör hatırlanır", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.showDirectoryPicker = async () => {
+      const root = await navigator.storage.getDirectory();
+      return root.getDirectoryHandle("test-yedekleri", { create: true });
+    };
+  });
+  await enter(page);
+  await addCash(page, "income", "100", "Klasör testi");
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Yedekleme", exact: true })
+    .click();
+  await page.getByLabel("Yedek parolası").fill("klasor-yedek-parolasi-123");
+  await page
+    .getByRole("button", { name: "Yedek klasörü seç", exact: true })
+    .click();
+  await expect(page.locator(".folder-backup [role=status]")).toContainText(
+    "klasöre kaydedildi",
+  );
+  async function files() {
+    return page.evaluate(async () => {
+      const dir = await (
+        await navigator.storage.getDirectory()
+      ).getDirectoryHandle("test-yedekleri");
+      const values = [];
+      for await (const [name, handle] of dir.entries())
+        values.push({
+          name,
+          file: JSON.parse(await (await handle.getFile()).text()),
+        });
+      return values;
+    });
+  }
+  const initial = await files();
+  expect(initial).toHaveLength(1);
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Özet", exact: true })
+    .click();
+  await addCash(page, "expense", "25", "Diğer ekranda değişiklik");
+  await expect.poll(async () => (await files()).length).toBe(2);
+  const { decryptBackup } = await import("../../src/backup.js");
+  const all = await files();
+  const restored = await Promise.all(
+    all.map((f) => decryptBackup(f.file, "klasor-yedek-parolasi-123", "local")),
+  );
+  expect(restored.map((events) => events.length).sort()).toEqual([1, 2]);
+  await page.reload();
+  await page.getByRole("button", { name: "Yerel çalışma alanını aç" }).click();
+  await page
+    .locator("nav")
+    .getByRole("button", { name: "Yedekleme", exact: true })
+    .click();
+  await expect(page.locator(".folder-backup")).toContainText("test-yedekleri");
+  await page.getByLabel("Yedek parolası").fill("klasor-yedek-parolasi-123");
+  await expect.poll(async () => (await files()).length).toBe(3);
+  await page.getByRole("button", { name: "Otomatik yedeği durdur" }).click();
+  await expect(page.locator(".folder-backup")).toContainText("Durduruldu");
+});

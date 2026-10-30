@@ -72,3 +72,27 @@ it("bozuk yedek mevcut veriye dokunmaz", async () => {
   expect(await db.backups.count()).toBe(0);
   await db.delete();
 });
+
+it("klasör ayarı için sürüm yükseltme eski kayıtları ve yedekleri korur", async () => {
+  const { default: Dexie } = await import("dexie");
+  const scope = crypto.randomUUID();
+  const old = new Dexie("atolye-defteri-" + scope);
+  old
+    .version(1)
+    .stores({ events: "id,entity,kind", sent: "id", backups: "id,at" });
+  await old.events.add(e);
+  await old.backups.add({
+    id: "backup",
+    at: "2026-01-01T00:00:00Z",
+    file: { ciphertext: "preserved" },
+  });
+  old.close();
+  const upgraded = openDB(scope);
+  expect(await upgraded.events.get(e.id)).toEqual(e);
+  expect((await upgraded.backups.get("backup")).file.ciphertext).toBe(
+    "preserved",
+  );
+  await upgraded.settings.put({ id: "folder-backup", enabled: false });
+  expect((await upgraded.settings.get("folder-backup")).enabled).toBe(false);
+  await upgraded.delete();
+});
