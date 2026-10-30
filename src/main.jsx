@@ -1,3 +1,5 @@
+import ChangePassword from "./ChangePassword.jsx";
+import { loginAddress } from "./account.js";
 import FolderBackup from "./FolderBackup.jsx";
 import Editor from "./Editor.jsx";
 import Reports from "./Reports.jsx";
@@ -72,6 +74,7 @@ function App() {
     [events, setEvents] = useState([]),
     [tab, setTab] = useState("Özet"),
     [modal, setModal] = useState(null),
+    [passwordDialog, setPasswordDialog] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [online, setOnline] = useState(navigator.onLine),
@@ -96,26 +99,29 @@ function App() {
   const scope = identity ? (identity.local ? "local" : workspace) : null;
   useEffect(() => {
     if (!cloud) return;
-    cloud.auth.getSession().then(({ data, error }) => {
-      if (error) setError("Oturum doğrulanamadı. Yeniden giriş yapın.");
-      setSession(error ? null : data.session);
-      setAuthReady(true);
-    }).catch(() => {
-      setError("Oturum okunamadı. Yeniden giriş yapın.");
-      setAuthReady(true);
-    });
+    cloud.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) setError("Oturum doğrulanamadı. Yeniden giriş yapın.");
+        setSession(error ? null : data.session);
+        setAuthReady(true);
+      })
+      .catch(() => {
+        setError("Oturum okunamadı. Yeniden giriş yapın.");
+        setAuthReady(true);
+      });
     const { data } = cloud.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => {
     if (!session) {
-      setIdentity((current) => current?.local ? current : null);
+      setIdentity((current) => (current?.local ? current : null));
       setWorkspace("");
       setPassword("");
       return;
     }
     let active = true;
-    setIdentity((current) => current?.local ? current : null);
+    setIdentity((current) => (current?.local ? current : null));
     setWorkspace("");
     (async () => {
       const { data, error } = await cloud
@@ -127,7 +133,9 @@ function App() {
         if (navigator.onLine) {
           setIdentity(null);
           setWorkspace("");
-          setError("Üyelik doğrulanamadı. Yeniden giriş yapın: " + error.message);
+          setError(
+            "Üyelik doğrulanamadı. Yeniden giriş yapın: " + error.message,
+          );
           return;
         }
         const cached = localStorage.getItem(
@@ -329,7 +337,7 @@ function App() {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const { error } = await cloud.auth.signInWithPassword({
-      email: f.get("email"),
+      email: loginAddress(f.get("username")),
       password: f.get("password"),
     });
     if (error) throw error;
@@ -498,8 +506,20 @@ function App() {
           )}
           {cloud ? (
             <form onSubmit={attempt(signIn)}>
-              <Field label="E-posta" name="email" type="email" required />
-              <Field label="Şifre" name="password" type="password" required />
+              <Field
+                label="Kullanıcı adı"
+                name="username"
+                autoComplete="username"
+                placeholder="israfil veya oktay"
+                required
+              />
+              <Field
+                label="Şifre"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+              />
               <button className="primary">Giriş yap</button>
             </form>
           ) : (
@@ -581,6 +601,15 @@ function App() {
                 : syncStatus || "Bağlantı kontrol ediliyor"}
             </small>
           </div>
+          {!identity.local && (
+            <button
+              className="text-button"
+              style={{ marginTop: 14 }}
+              onClick={() => setPasswordDialog(true)}
+            >
+              Şifremi değiştir
+            </button>
+          )}
           <button
             className="profile"
             onClick={attempt(async () => {
@@ -1373,6 +1402,16 @@ function App() {
           Atölye Defteri <span>Sade kayıtlar. Net hesaplar.</span>
         </footer>
       </main>
+      {passwordDialog && !identity.local && (
+        <ChangePassword
+          client={cloud}
+          close={() => setPasswordDialog(false)}
+          done={() => {
+            setPasswordDialog(false);
+            setNotice("Hesap şifreniz değiştirildi.");
+          }}
+        />
+      )}
       {modal && (
         <Editor
           modal={modal}
